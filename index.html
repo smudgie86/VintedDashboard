@@ -48,7 +48,23 @@
     ];
 
     function App() {
-      const [items, setItems] = useState(initialInventory);
+      const [items, setItems] = useState(() => {
+        const savedData = localStorage.getItem('vintedInventoryData');
+        if (savedData) {
+          try {
+            return JSON.parse(savedData);
+          } catch (e) {
+            console.error('Failed to parse saved inventory data', e);
+            return initialInventory;
+          }
+        }
+        return initialInventory;
+      });
+
+      useEffect(() => {
+        localStorage.setItem('vintedInventoryData', JSON.stringify(items));
+      }, [items]);
+
       const [filterStart, setFilterStart] = useState('');
       const [filterEnd, setFilterEnd] = useState('');
       const [filterMonth, setFilterMonth] = useState('');
