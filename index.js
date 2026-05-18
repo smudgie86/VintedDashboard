@@ -1,0 +1,769 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { PoundSterling, Package, ShoppingCart, TrendingUp, Plus, Calendar, Edit, Trash2, CheckCircle, ArrowRightCircle, Download, ArrowUpDown } from 'lucide-react';
+
+const CATEGORIES = ['Tech', 'Home', 'Books', 'Toys', 'Clothing', 'Misc'];
+
+const initialInventory = [
+  {
+    id: 1,
+    sku: 'TECH-001',
+    category: 'Tech',
+    title: 'Belkin adapter',
+    costPrice: 2.50,
+    listPrice: 9.95,
+    soldPrice: null,
+    status: 'Active',
+    uploadDate: '2026-05-10',
+    sellDate: ''
+  },
+  {
+    id: 2,
+    sku: 'TECH-002',
+    category: 'Tech',
+    title: 'Lumix Camera',
+    costPrice: 25.00,
+    listPrice: 99.95,
+    soldPrice: 95.00,
+    status: 'Sold',
+    uploadDate: '2026-04-15',
+    sellDate: '2026-05-02'
+  },
+  {
+    id: 3,
+    sku: 'TECH-003',
+    category: 'Tech',
+    title: 'PS4 controller',
+    costPrice: 5.00,
+    listPrice: 15.00,
+    soldPrice: 15.00,
+    status: 'Sold',
+    uploadDate: '2026-05-01',
+    sellDate: '2026-05-12'
+  },
+  {
+    id: 4,
+    sku: 'HOME-001',
+    category: 'Home',
+    title: 'Rolife DIY Miniature House',
+    costPrice: 8.50,
+    listPrice: 22.50,
+    soldPrice: null,
+    status: 'Active',
+    uploadDate: '2026-05-15',
+    sellDate: ''
+  },
+  {
+    id: 5,
+    sku: 'TECH-004',
+    category: 'Tech',
+    title: 'Super Mario Bros U Deluxe Switch',
+    costPrice: 10.00,
+    listPrice: 20.00,
+    soldPrice: 20.00,
+    status: 'Sold',
+    uploadDate: '2026-04-20',
+    sellDate: '2026-04-28'
+  },
+  {
+    id: 6,
+    sku: 'BOOK-001',
+    category: 'Books',
+    title: 'Bored of Lunch Book',
+    costPrice: 0.50,
+    listPrice: 4.50,
+    soldPrice: null,
+    status: 'Active',
+    uploadDate: '2026-05-17',
+    sellDate: ''
+  },
+  {
+    id: 7,
+    sku: 'TECH-005',
+    category: 'Tech',
+    title: 'Toshiba external drive 1TB',
+    costPrice: 5.00,
+    listPrice: 14.95,
+    soldPrice: 14.95,
+    status: 'Sold',
+    uploadDate: '2026-03-10',
+    sellDate: '2026-04-05'
+  },
+  {
+    id: 8,
+    sku: 'HOME-002',
+    category: 'Home',
+    title: 'Stack of fabrics',
+    costPrice: 2.00,
+    listPrice: 20.00,
+    soldPrice: 20.00,
+    status: 'Sold',
+    uploadDate: '2026-04-25',
+    sellDate: '2026-05-05'
+  }
+];
+
+export default function App() {
+  const [items, setItems] = useState(initialInventory);
+  const [filterStart, setFilterStart] = useState('');
+  const [filterEnd, setFilterEnd] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  
+  const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [sellModalVisible, setSellModalVisible] = useState(false);
+  const [itemBeingSold, setItemBeingSold] = useState(null);
+  const [sellPrice, setSellPrice] = useState('');
+  
+  const [redonateModalVisible, setRedonateModalVisible] = useState(false);
+  const [itemBeingRedonated, setItemBeingRedonated] = useState(null);
+  
+  const [sortConfig, setSortConfig] = useState({ key: 'uploadDate', direction: 'desc' });
+
+  const defaultFormData = {
+    category: 'Misc',
+    sku: '',
+    title: '',
+    costPrice: '',
+    listPrice: '',
+    status: 'Draft',
+    uploadDate: new Date().toISOString().split('T')[0],
+    sellDate: '',
+    soldPrice: ''
+  };
+
+  const [formData, setFormData] = useState(defaultFormData);
+
+  const generateSku = (categoryName) => {
+    const prefix = categoryName.toUpperCase().substring(0, 4);
+    const categoryItems = items.filter(i => i.sku && i.sku.startsWith(prefix));
+    
+    let maxNum = 0;
+    categoryItems.forEach(item => {
+      const parts = item.sku.split('-');
+      if (parts.length > 1) {
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    
+    return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+  };
+
+  useEffect(() => {
+    if (showForm && !isEditing) {
+      setFormData(prev => ({ ...prev, sku: generateSku(prev.category) }));
+    }
+  }, [formData.category, showForm, isEditing]);
+
+  const handleMonthChange = (e) => {
+    const value = e.target.value;
+    setFilterMonth(value);
+    
+    if (value) {
+      const [year, month] = value.split('-');
+      const startDate = new Date(year, parseInt(month) - 1, 1);
+      const endDate = new Date(year, parseInt(month), 0);
+      
+      setFilterStart(startDate.toISOString().split('T')[0]);
+      setFilterEnd(endDate.toISOString().split('T')[0]);
+    } else {
+      setFilterStart('');
+      setFilterEnd('');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveItem = (e) => {
+    e.preventDefault();
+    const itemToSave = {
+      ...formData,
+      costPrice: parseFloat(formData.costPrice) || 0,
+      listPrice: parseFloat(formData.listPrice) || 0,
+      soldPrice: formData.status === 'Sold' ? (parseFloat(formData.soldPrice) || 0) : null
+    };
+
+    if (isEditing) {
+      setItems(items.map(item => item.id === formData.id ? itemToSave : item));
+    } else {
+      itemToSave.id = Date.now();
+      setItems([itemToSave, ...items]);
+    }
+    
+    setShowForm(false);
+    setIsEditing(false);
+    setFormData(defaultFormData);
+  };
+
+  const initiateEdit = (item) => {
+    setFormData({
+      ...item,
+      costPrice: item.costPrice || '',
+      listPrice: item.listPrice || '',
+      soldPrice: item.soldPrice || ''
+    });
+    setIsEditing(true);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openRedonateModal = (item) => {
+    setItemBeingRedonated(item);
+    setRedonateModalVisible(true);
+  };
+
+  const confirmRedonateStatus = () => {
+    if (!itemBeingRedonated) return;
+    setItems(items.map(item => item.id === itemBeingRedonated.id ? { ...item, status: 'Redonated' } : item));
+    setRedonateModalVisible(false);
+    setItemBeingRedonated(null);
+  };
+
+  const updateStatus = (id, newStatus) => {
+    setItems(items.map(item => item.id === id ? { ...item, status: newStatus } : item));
+  };
+
+  const openSellModal = (item) => {
+    setItemBeingSold(item);
+    setSellPrice(item.listPrice.toString());
+    setSellModalVisible(true);
+  };
+
+  const confirmSoldStatus = () => {
+    const price = parseFloat(sellPrice);
+    if (isNaN(price)) return;
+
+    setItems(items.map(item => {
+      if (item.id === itemBeingSold.id) {
+        return {
+          ...item,
+          status: 'Sold',
+          sellDate: new Date().toISOString().split('T')[0],
+          soldPrice: price
+        };
+      }
+      return item;
+    }));
+    setSellModalVisible(false);
+    setItemBeingSold(null);
+    setSellPrice('');
+  };
+
+  const getDaysListed = (uploadStr, sellStr, status) => {
+    if (!uploadStr) return 0;
+    const start = new Date(uploadStr);
+    let end = new Date();
+    
+    if (status === 'Sold' && sellStr) {
+      end = new Date(sellStr);
+    }
+    
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getPercentageDrop = (list, sold) => {
+    if (!sold || list <= 0) return 0;
+    const drop = ((list - sold) / list) * 100;
+    return drop > 0 ? drop : 0;
+  };
+
+  const stats = useMemo(() => {
+    let uploaded = 0;
+    let sold = 0;
+    let revenue = 0;
+    let profit = 0;
+
+    const start = filterStart ? new Date(filterStart) : new Date('2000-01-01');
+    const end = filterEnd ? new Date(filterEnd) : new Date('2100-01-01');
+    end.setHours(23, 59, 59, 999);
+
+    items.forEach(item => {
+      const upDate = new Date(item.uploadDate);
+      if (upDate >= start && upDate <= end && item.status !== 'Draft') {
+        uploaded++;
+      }
+
+      if (item.status === 'Sold' && item.sellDate) {
+        const sDate = new Date(item.sellDate);
+        if (sDate >= start && sDate <= end) {
+          sold++;
+          const finalPrice = item.soldPrice || 0;
+          revenue += finalPrice;
+          profit += (finalPrice - (item.costPrice || 0));
+        }
+      }
+    });
+
+    return { uploaded, sold, revenue, profit };
+  }, [items, filterStart, filterEnd]);
+
+  const filteredItems = useMemo(() => {
+    const start = filterStart ? new Date(filterStart) : new Date('2000-01-01');
+    const end = filterEnd ? new Date(filterEnd) : new Date('2100-01-01');
+    end.setHours(23, 59, 59, 999);
+
+    return items.filter(item => {
+      const upDate = new Date(item.uploadDate);
+      const sDate = item.sellDate ? new Date(item.sellDate) : null;
+      
+      const uploadedInRange = upDate >= start && upDate <= end;
+      const soldInRange = sDate && sDate >= start && sDate <= end;
+
+      return uploadedInRange || soldInRange;
+    });
+  }, [items, filterStart, filterEnd]);
+
+  const sortedItems = useMemo(() => {
+    let sortableItems = [...filteredItems];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (sortConfig.key === 'profit') {
+           aValue = a.status === 'Sold' ? (a.soldPrice - a.costPrice) : -999999;
+           bValue = b.status === 'Sold' ? (b.soldPrice - b.costPrice) : -999999;
+        }
+        if (sortConfig.key === 'daysListed') {
+           aValue = getDaysListed(a.uploadDate, a.sellDate, a.status);
+           bValue = getDaysListed(b.uploadDate, b.sellDate, b.status);
+        }
+        if (sortConfig.key === 'drop') {
+           aValue = getPercentageDrop(a.listPrice, a.soldPrice);
+           bValue = getPercentageDrop(b.listPrice, b.soldPrice);
+        }
+
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredItems, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const exportCSV = () => {
+    const headers = ['SKU', 'Title', 'Category', 'Status', 'Cost Price', 'Listed Price', 'Sold Price', 'Upload Date', 'Sell Date', 'Days Listed', 'Profit', 'Drop %'];
+    const rows = sortedItems.map(item => {
+      const profit = item.status === 'Sold' ? (item.soldPrice - item.costPrice) : 0;
+      const days = getDaysListed(item.uploadDate, item.sellDate, item.status);
+      const drop = getPercentageDrop(item.listPrice, item.soldPrice);
+      return [
+        item.sku,
+        `"${String(item.title).replace(/"/g, '""')}"`,
+        item.category,
+        item.status,
+        item.costPrice,
+        item.listPrice,
+        item.soldPrice || '',
+        item.uploadDate || '',
+        item.sellDate || '',
+        days,
+        profit,
+        drop.toFixed(1)
+      ].join(',');
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "vinted_inventory.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB');
+  };
+
+  const SortHeader = ({ label, sortKey, alignRight }) => (
+    <th 
+      className={`p-4 font-medium cursor-pointer hover:bg-slate-100 transition-colors ${alignRight ? 'text-right' : 'text-left'}`}
+      onClick={() => requestSort(sortKey)}
+    >
+      <div className={`flex items-center gap-1 ${alignRight ? 'justify-end' : ''}`}>
+        {label}
+        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+      </div>
+    </th>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-6 font-sans">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Vinted Inventory Dashboard</h1>
+            <p className="text-slate-500 text-sm mt-1">Track your listings, sales, and profits</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <Calendar className="w-5 h-5 text-slate-400 ml-2" />
+            
+            <div className="flex items-center gap-2 border-r border-slate-100 pr-3">
+              <span className="text-xs text-slate-500">Month:</span>
+              <input 
+                type="month" 
+                value={filterMonth}
+                onChange={handleMonthChange}
+                className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pl-1">
+              <input 
+                type="date" 
+                value={filterStart}
+                onChange={(e) => {
+                  setFilterStart(e.target.value);
+                  setFilterMonth('');
+                }}
+                className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none"
+              />
+              <span className="text-slate-300">-</span>
+              <input 
+                type="date" 
+                value={filterEnd}
+                onChange={(e) => {
+                  setFilterEnd(e.target.value);
+                  setFilterMonth('');
+                }}
+                className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none pr-2"
+              />
+            </div>
+
+            {(filterStart || filterEnd || filterMonth) && (
+              <button 
+                onClick={() => { setFilterStart(''); setFilterEnd(''); setFilterMonth(''); }}
+                className="text-xs text-rose-500 hover:text-rose-600 px-2 border-l border-slate-100"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+              <Package className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Items Uploaded</p>
+              <p className="text-2xl font-semibold text-slate-800">{stats.uploaded}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <ShoppingCart className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Items Sold</p>
+              <p className="text-2xl font-semibold text-slate-800">{stats.sold}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
+              <PoundSterling className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Total Revenue</p>
+              <p className="text-2xl font-semibold text-slate-800">£{stats.revenue.toFixed(2)}</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Net Profit</p>
+              <p className="text-2xl font-semibold text-slate-800">£{stats.profit.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 className="text-lg font-medium text-slate-800">Inventory Catalogue</h2>
+            <div className="flex gap-2">
+              <button 
+                onClick={exportCSV}
+                className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+              <button 
+                onClick={() => {
+                  setFormData(defaultFormData);
+                  setIsEditing(false);
+                  setShowForm(!showForm);
+                }}
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                {showForm ? 'Cancel' : <><Plus className="w-4 h-4" /> Add New Item</>}
+              </button>
+            </div>
+          </div>
+
+          {showForm && (
+            <div className="p-5 border-b border-slate-100 bg-teal-50/30">
+              <form onSubmit={handleSaveItem} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Category</label>
+                  <select name="category" value={formData.category} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500">
+                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">SKU Code (Auto)</label>
+                  <input required type="text" name="sku" value={formData.sku} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500 bg-white" placeholder="e.g. TECH-001" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-slate-500 mb-1">Item Title</label>
+                  <input required type="text" name="title" value={formData.title} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="Item description" />
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Status</label>
+                  <select name="status" value={formData.status} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500">
+                    <option value="Draft">Draft</option>
+                    <option value="Active">Active</option>
+                    <option value="Sold">Sold</option>
+                    <option value="Redonated">Redonated</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Cost Price (£)</label>
+                  <input required type="number" step="0.01" name="costPrice" value={formData.costPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Listed Price (£)</label>
+                  <input required type="number" step="0.01" name="listPrice" value={formData.listPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Upload Date</label>
+                  <input required type="date" name="uploadDate" value={formData.uploadDate} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" />
+                </div>
+                
+                {formData.status === 'Sold' && (
+                  <>
+                    <div className="md:col-start-1">
+                      <label className="block text-xs text-slate-500 mb-1">Sell Date</label>
+                      <input required type="date" name="sellDate" value={formData.sellDate} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Sold Price (£)</label>
+                      <input required type="number" step="0.01" name="soldPrice" value={formData.soldPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" />
+                    </div>
+                  </>
+                )}
+                <div className="md:col-span-4 flex justify-end mt-2">
+                  <button type="submit" className="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm hover:bg-slate-700 transition-colors">
+                    {isEditing ? 'Update Item' : 'Save Item'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 select-none">
+                  <SortHeader label="SKU" sortKey="sku" />
+                  <SortHeader label="Item Title" sortKey="title" />
+                  <SortHeader label="Status" sortKey="status" />
+                  <SortHeader label="Cost" sortKey="costPrice" />
+                  <SortHeader label="Listed" sortKey="listPrice" />
+                  <SortHeader label="Sold For" sortKey="soldPrice" />
+                  <SortHeader label="Drop %" sortKey="drop" />
+                  <SortHeader label="Profit" sortKey="profit" />
+                  <SortHeader label="Upload Date" sortKey="uploadDate" />
+                  <SortHeader label="Sell Date" sortKey="sellDate" />
+                  <SortHeader label="Days Listed" sortKey="daysListed" alignRight />
+                  <th className="p-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sortedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan="12" className="p-8 text-center text-slate-500">
+                      No items found for this date range.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedItems.map(item => {
+                    const profit = item.status === 'Sold' ? (item.soldPrice - item.costPrice) : 0;
+                    const drop = getPercentageDrop(item.listPrice, item.soldPrice);
+                    
+                    let statusClass = 'bg-amber-100 text-amber-700';
+                    if (item.status === 'Sold') statusClass = 'bg-emerald-100 text-emerald-700';
+                    if (item.status === 'Draft') statusClass = 'bg-slate-200 text-slate-600';
+                    if (item.status === 'Redonated') statusClass = 'bg-rose-100 text-rose-700';
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-4 text-sm text-slate-600 font-medium whitespace-nowrap">{item.sku}</td>
+                        <td className="p-4 text-sm text-slate-800">{item.title}</td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusClass}`}>
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-slate-600">£{item.costPrice.toFixed(2)}</td>
+                        <td className="p-4 text-sm text-slate-600">£{item.listPrice.toFixed(2)}</td>
+                        <td className="p-4 text-sm font-medium text-slate-800">
+                          {item.status === 'Sold' ? `£${item.soldPrice.toFixed(2)}` : '-'}
+                        </td>
+                        <td className="p-4 text-sm font-medium text-rose-500">
+                          {item.status === 'Sold' && drop > 0 ? `-${drop.toFixed(1)}%` : '-'}
+                        </td>
+                        <td className="p-4 text-sm font-medium">
+                          {item.status === 'Sold' ? (
+                            <span className={profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                              {profit >= 0 ? '+' : ''}£{profit.toFixed(2)}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="p-4 text-sm text-slate-600 whitespace-nowrap">
+                          {formatDate(item.uploadDate)}
+                        </td>
+                        <td className="p-4 text-sm text-emerald-600 whitespace-nowrap">
+                          {item.status === 'Sold' ? formatDate(item.sellDate) : '-'}
+                        </td>
+                        <td className="p-4 text-sm text-right text-slate-600">
+                          {getDaysListed(item.uploadDate, item.sellDate, item.status)}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {item.status === 'Draft' && (
+                              <button 
+                                onClick={() => updateStatus(item.id, 'Active')}
+                                title="Make Active"
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              >
+                                <ArrowRightCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            {item.status === 'Active' && (
+                              <button 
+                                onClick={() => openSellModal(item)}
+                                title="Mark as Sold"
+                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => initiateEdit(item)}
+                              title="Edit Item"
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            {item.status !== 'Redonated' && (
+                              <button 
+                                onClick={() => openRedonateModal(item)}
+                                title="Mark as Redonated"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {sellModalVisible && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4">
+              <h3 className="text-lg font-medium text-slate-800 mb-2">Mark Item as Sold</h3>
+              <p className="text-sm text-slate-500 mb-4">Please enter the final selling price for {itemBeingSold?.title}.</p>
+              <input
+                type="number"
+                step="0.01"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 mb-4"
+                placeholder="0.00"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setSellModalVisible(false)} 
+                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmSoldStatus} 
+                  className="px-4 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+                >
+                  Confirm Sale
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {redonateModalVisible && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4">
+              <h3 className="text-lg font-medium text-slate-800 mb-2">Mark as Redonated</h3>
+              <p className="text-sm text-slate-500 mb-4">Are you sure you want to mark {itemBeingRedonated?.title} as Redonated?</p>
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setRedonateModalVisible(false)} 
+                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmRedonateStatus} 
+                  className="px-4 py-2 text-sm text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
