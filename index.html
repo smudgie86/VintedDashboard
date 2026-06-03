@@ -3,467 +3,1589 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vinted Inventory Dashboard</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
+  <title>Resell Radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  <script type="text/babel">
-    const { useState, useMemo, useEffect } = React;
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxpftSW-VmMVbRwvW9YlFXKxaZDmhVpuE",
+      authDomain: "vinted-dashboard-fa829.firebaseapp.com",
+      projectId: "vinted-dashboard-fa829",
+      storageBucket: "vinted-dashboard-fa829.firebasestorage.app",
+      messagingSenderId: "92453414207",
+      appId: "1:92453414207:web:6d9a823d2ac0ec29b45f8a"
+    };
 
-    const Icon = ({ children, className }) => (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-    );
-    const PoundSterling = ({className}) => <Icon className={className}><path d="M18 7c0-5.333-8-5.333-8 0"/><path d="M10 7v14"/><path d="M6 21h12"/><path d="M6 13h10"/></Icon>;
-    const Package = ({className}) => <Icon className={className}><path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></Icon>;
-    const ShoppingCart = ({className}) => <Icon className={className}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></Icon>;
-    const TrendingUp = ({className}) => <Icon className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>;
-    const Plus = ({className}) => <Icon className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
-    const Calendar = ({className}) => <Icon className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
-    const Edit = ({className}) => <Icon className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
-    const Trash2 = ({className}) => <Icon className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
-    const CheckCircle = ({className}) => <Icon className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
-    const ArrowRightCircle = ({className}) => <Icon className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 16 16 12 12 8"/><line x1="8" y1="12" x2="16" y2="12"/></Icon>;
-    const Download = ({className}) => <Icon className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
-    const ArrowUpDown = ({className}) => <Icon className={className}><polyline points="17 20 21 16 17 12"/><line x1="21" y1="16" x2="9" y2="16"/><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="15" y2="8"/></Icon>;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    const CATEGORIES = ['Tech', 'Home', 'Books', 'Toys', 'Clothing', 'Misc'];
+    // ── State ──────────────────────────────────────────────────────────────
+    let items = [];
+    let expenses = [];
+    let currentView = 'dashboard';
+    let editingItem = null;
+    let editingExpense = null;
+    let sellModal = null;
+    let profitChart = null;
+    let statusChart = null;
+    let monthlyChart = null;
+    let filterStart = '';
+    let filterEnd = '';
 
-    const initialInventory = [
-     ];
+    const CATEGORIES = [
+      "Women's clothing","Men's clothing","Kids' clothing","Shoes",
+      "Bags & accessories","Jewellery & watches","Home & garden",
+      "Books & stationery","Electronics","Entertainment","Sports & leisure","Other"
+    ];
+    const SOURCES = ["Charity shop","Car boot sale","Own wardrobe","eBay","Facebook Marketplace","Online","Other"];
+    const CONDITIONS = ["New with tags","Excellent","Good","Satisfactory"];
+    const STATUSES = ["Listed","Sold","Donated","Unlisted"];
 
-    function App() {
-      const [items, setItems] = useState(() => {
-        const savedData = localStorage.getItem('vintedInventoryData');
-        if (savedData) {
-          try {
-            return JSON.parse(savedData);
-          } catch (e) {
-            console.error('Failed to parse saved inventory data', e);
-            return initialInventory;
-          }
-        }
-        return initialInventory;
+    // ── Firebase listeners ─────────────────────────────────────────────────
+    const itemsQ = query(collection(db, "items"), orderBy("dateListed", "desc"));
+    onSnapshot(itemsQ, snap => {
+      items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    });
+    const expQ = query(collection(db, "expenses"), orderBy("date", "desc"));
+    onSnapshot(expQ, snap => {
+      expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    });
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    const fmt = n => `£${Number(n||0).toFixed(2)}`;
+    const fmtDate = s => s ? new Date(s).toLocaleDateString('en-GB') : '—';
+    const daysListed = item => {
+      if (!item.dateListed) return 0;
+      const end = item.dateResolved ? new Date(item.dateResolved) : new Date();
+      return Math.max(0, Math.round((end - new Date(item.dateListed)) / 86400000));
+    };
+    const profit = item => {
+      if (item.status === 'Sold') return (item.salePrice||0) - (item.buyPrice||0);
+      if (item.status === 'Donated') return -(item.buyPrice||0);
+      return 0;
+    };
+
+    function getFilteredItems() {
+      if (!filterStart && !filterEnd) return items;
+      return items.filter(i => {
+        const d = new Date(i.dateListed||'2000-01-01');
+        const s = filterStart ? new Date(filterStart) : new Date('2000-01-01');
+        const e = filterEnd ? new Date(filterEnd) : new Date('2100-01-01');
+        return d >= s && d <= e;
       });
-
-      useEffect(() => {
-        localStorage.setItem('vintedInventoryData', JSON.stringify(items));
-      }, [items]);
-
-      const [filterStart, setFilterStart] = useState('');
-      const [filterEnd, setFilterEnd] = useState('');
-      const [filterMonth, setFilterMonth] = useState('');
-      
-      const [showForm, setShowForm] = useState(false);
-      const [isEditing, setIsEditing] = useState(false);
-
-      const [sellModalVisible, setSellModalVisible] = useState(false);
-      const [itemBeingSold, setItemBeingSold] = useState(null);
-      const [sellPrice, setSellPrice] = useState('');
-      
-      const [redonateModalVisible, setRedonateModalVisible] = useState(false);
-      const [itemBeingRedonated, setItemBeingRedonated] = useState(null);
-      
-      const [sortConfig, setSortConfig] = useState({ key: 'uploadDate', direction: 'desc' });
-
-      const defaultFormData = {
-        category: 'Misc', sku: '', title: '', costPrice: '', listPrice: '', status: 'Draft', uploadDate: new Date().toISOString().split('T')[0], sellDate: '', soldPrice: ''
-      };
-
-      const [formData, setFormData] = useState(defaultFormData);
-
-      const generateSku = (categoryName) => {
-        const prefix = categoryName.toUpperCase().substring(0, 4);
-        const categoryItems = items.filter(i => i.sku && i.sku.startsWith(prefix));
-        let maxNum = 0;
-        categoryItems.forEach(item => {
-          const parts = item.sku.split('-');
-          if (parts.length > 1) {
-            const num = parseInt(parts[1], 10);
-            if (!isNaN(num) && num > maxNum) maxNum = num;
-          }
-        });
-        return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
-      };
-
-      useEffect(() => {
-        if (showForm && !isEditing) {
-          setFormData(prev => ({ ...prev, sku: generateSku(prev.category) }));
-        }
-      }, [formData.category, showForm, isEditing]);
-
-      const handleMonthChange = (e) => {
-        const value = e.target.value;
-        setFilterMonth(value);
-        if (value) {
-          const [year, month] = value.split('-');
-          const startDate = new Date(year, parseInt(month) - 1, 1);
-          const endDate = new Date(year, parseInt(month), 0);
-          setFilterStart(startDate.toISOString().split('T')[0]);
-          setFilterEnd(endDate.toISOString().split('T')[0]);
-        } else {
-          setFilterStart('');
-          setFilterEnd('');
-        }
-      };
-
-      const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-      };
-
-      const handleSaveItem = (e) => {
-        e.preventDefault();
-        const itemToSave = {
-          ...formData,
-          costPrice: parseFloat(formData.costPrice) || 0,
-          listPrice: parseFloat(formData.listPrice) || 0,
-          soldPrice: formData.status === 'Sold' ? (parseFloat(formData.soldPrice) || 0) : null
-        };
-
-        if (isEditing) {
-          setItems(items.map(item => item.id === formData.id ? itemToSave : item));
-        } else {
-          itemToSave.id = Date.now();
-          setItems([itemToSave, ...items]);
-        }
-        setShowForm(false);
-        setIsEditing(false);
-        setFormData(defaultFormData);
-      };
-
-      const initiateEdit = (item) => {
-        setFormData({ ...item, costPrice: item.costPrice || '', listPrice: item.listPrice || '', soldPrice: item.soldPrice || '' });
-        setIsEditing(true);
-        setShowForm(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const openRedonateModal = (item) => {
-        setItemBeingRedonated(item);
-        setRedonateModalVisible(true);
-      };
-
-      const confirmRedonateStatus = () => {
-        if (!itemBeingRedonated) return;
-        setItems(items.map(item => item.id === itemBeingRedonated.id ? { ...item, status: 'Redonated' } : item));
-        setRedonateModalVisible(false);
-        setItemBeingRedonated(null);
-      };
-
-      const updateStatus = (id, newStatus) => {
-        setItems(items.map(item => item.id === id ? { ...item, status: newStatus } : item));
-      };
-
-      const openSellModal = (item) => {
-        setItemBeingSold(item);
-        setSellPrice(item.listPrice.toString());
-        setSellModalVisible(true);
-      };
-
-      const confirmSoldStatus = () => {
-        const price = parseFloat(sellPrice);
-        if (isNaN(price)) return;
-        setItems(items.map(item => {
-          if (item.id === itemBeingSold.id) {
-            return { ...item, status: 'Sold', sellDate: new Date().toISOString().split('T')[0], soldPrice: price };
-          }
-          return item;
-        }));
-        setSellModalVisible(false);
-        setItemBeingSold(null);
-        setSellPrice('');
-      };
-
-      const getDaysListed = (uploadStr, sellStr, status) => {
-        if (!uploadStr) return 0;
-        const start = new Date(uploadStr);
-        let end = new Date();
-        if (status === 'Sold' && sellStr) end = new Date(sellStr);
-        return Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
-      };
-
-      const getPercentageDrop = (list, sold) => {
-        if (!sold || list <= 0) return 0;
-        const drop = ((list - sold) / list) * 100;
-        return drop > 0 ? drop : 0;
-      };
-
-      const stats = useMemo(() => {
-        let uploaded = 0, sold = 0, revenue = 0, profit = 0;
-        const start = filterStart ? new Date(filterStart) : new Date('2000-01-01');
-        const end = filterEnd ? new Date(filterEnd) : new Date('2100-01-01');
-        end.setHours(23, 59, 59, 999);
-
-        items.forEach(item => {
-          const upDate = new Date(item.uploadDate);
-          if (upDate >= start && upDate <= end && item.status !== 'Draft') uploaded++;
-          if (item.status === 'Sold' && item.sellDate) {
-            const sDate = new Date(item.sellDate);
-            if (sDate >= start && sDate <= end) {
-              sold++;
-              const finalPrice = item.soldPrice || 0;
-              revenue += finalPrice;
-              profit += (finalPrice - (item.costPrice || 0));
-            }
-          }
-        });
-        return { uploaded, sold, revenue, profit };
-      }, [items, filterStart, filterEnd]);
-
-      const filteredItems = useMemo(() => {
-        const start = filterStart ? new Date(filterStart) : new Date('2000-01-01');
-        const end = filterEnd ? new Date(filterEnd) : new Date('2100-01-01');
-        end.setHours(23, 59, 59, 999);
-        return items.filter(item => {
-          const upDate = new Date(item.uploadDate);
-          const sDate = item.sellDate ? new Date(item.sellDate) : null;
-          return (upDate >= start && upDate <= end) || (sDate && sDate >= start && sDate <= end);
-        });
-      }, [items, filterStart, filterEnd]);
-
-      const sortedItems = useMemo(() => {
-        let sortableItems = [...filteredItems];
-        if (sortConfig !== null) {
-          sortableItems.sort((a, b) => {
-            let aValue = a[sortConfig.key];
-            let bValue = b[sortConfig.key];
-            if (sortConfig.key === 'profit') {
-               aValue = a.status === 'Sold' ? (a.soldPrice - a.costPrice) : -999999;
-               bValue = b.status === 'Sold' ? (b.soldPrice - b.costPrice) : -999999;
-            }
-            if (sortConfig.key === 'daysListed') {
-               aValue = getDaysListed(a.uploadDate, a.sellDate, a.status);
-               bValue = getDaysListed(b.uploadDate, b.sellDate, b.status);
-            }
-            if (sortConfig.key === 'drop') {
-               aValue = getPercentageDrop(a.listPrice, a.soldPrice);
-               bValue = getPercentageDrop(b.listPrice, b.soldPrice);
-            }
-            if (aValue === null || aValue === undefined) aValue = '';
-            if (bValue === null || bValue === undefined) bValue = '';
-            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-          });
-        }
-        return sortableItems;
-      }, [filteredItems, sortConfig]);
-
-      const requestSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-        setSortConfig({ key, direction });
-      };
-
-      const exportCSV = () => {
-        const headers = ['SKU', 'Title', 'Category', 'Status', 'Cost Price', 'Listed Price', 'Sold Price', 'Upload Date', 'Sell Date', 'Days Listed', 'Profit', 'Drop %'];
-        const rows = sortedItems.map(item => {
-          const profit = item.status === 'Sold' ? (item.soldPrice - item.costPrice) : 0;
-          const days = getDaysListed(item.uploadDate, item.sellDate, item.status);
-          const drop = getPercentageDrop(item.listPrice, item.soldPrice);
-          return [
-            item.sku, `"${String(item.title).replace(/"/g, '""')}"`, item.category, item.status, item.costPrice,
-            item.listPrice, item.soldPrice || '', item.uploadDate || '', item.sellDate || '', days, profit, drop.toFixed(1)
-          ].join(',');
-        });
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "vinted_inventory.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('en-GB') : '-';
-
-      const SortHeader = ({ label, sortKey, alignRight }) => (
-        <th className={`p-4 font-medium cursor-pointer hover:bg-slate-100 transition-colors ${alignRight ? 'text-right' : 'text-left'}`} onClick={() => requestSort(sortKey)}>
-          <div className={`flex items-center gap-1 ${alignRight ? 'justify-end' : ''}`}>
-            {label} <ArrowUpDown className="w-3 h-3 text-slate-400" />
-          </div>
-        </th>
-      );
-
-      return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 p-6 font-sans">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900">Vinted Inventory Dashboard</h1>
-                <p className="text-slate-500 text-sm mt-1">Track your listings, sales, and profits</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
-                <Calendar className="w-5 h-5 text-slate-400 ml-2" />
-                <div className="flex items-center gap-2 border-r border-slate-100 pr-3">
-                  <span className="text-xs text-slate-500">Month:</span>
-                  <input type="month" value={filterMonth} onChange={handleMonthChange} className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none" />
-                </div>
-                <div className="flex items-center gap-2 pl-1">
-                  <input type="date" value={filterStart} onChange={(e) => { setFilterStart(e.target.value); setFilterMonth(''); }} className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none" />
-                  <span className="text-slate-300">-</span>
-                  <input type="date" value={filterEnd} onChange={(e) => { setFilterEnd(e.target.value); setFilterMonth(''); }} className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 outline-none pr-2" />
-                </div>
-                {(filterStart || filterEnd || filterMonth) && (
-                  <button onClick={() => { setFilterStart(''); setFilterEnd(''); setFilterMonth(''); }} className="text-xs text-rose-500 hover:text-rose-600 px-2 border-l border-slate-100">Clear</button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Package className="w-6 h-6" /></div>
-                <div><p className="text-sm text-slate-500">Items Uploaded</p><p className="text-2xl font-semibold text-slate-800">{stats.uploaded}</p></div>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><ShoppingCart className="w-6 h-6" /></div>
-                <div><p className="text-sm text-slate-500">Items Sold</p><p className="text-2xl font-semibold text-slate-800">{stats.sold}</p></div>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                <div className="p-3 bg-teal-50 text-teal-600 rounded-xl"><PoundSterling className="w-6 h-6" /></div>
-                <div><p className="text-sm text-slate-500">Total Revenue</p><p className="text-2xl font-semibold text-slate-800">£{stats.revenue.toFixed(2)}</p></div>
-              </div>
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><TrendingUp className="w-6 h-6" /></div>
-                <div><p className="text-sm text-slate-500">Net Profit</p><p className="text-2xl font-semibold text-slate-800">£{stats.profit.toFixed(2)}</p></div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h2 className="text-lg font-medium text-slate-800">Inventory Catalogue</h2>
-                <div className="flex gap-2">
-                  <button onClick={exportCSV} className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm transition-colors">
-                    <Download className="w-4 h-4" /> Export CSV
-                  </button>
-                  <button onClick={() => { setFormData(defaultFormData); setIsEditing(false); setShowForm(!showForm); }} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                    {showForm ? 'Cancel' : <><Plus className="w-4 h-4" /> Add New Item</>}
-                  </button>
-                </div>
-              </div>
-
-              {showForm && (
-                <div className="p-5 border-b border-slate-100 bg-teal-50/30">
-                  <form onSubmit={handleSaveItem} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div><label className="block text-xs text-slate-500 mb-1">Category</label><select name="category" value={formData.category} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500">{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
-                    <div><label className="block text-xs text-slate-500 mb-1">SKU Code (Auto)</label><input required type="text" name="sku" value={formData.sku} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500 bg-white" placeholder="e.g. TECH-001" /></div>
-                    <div className="md:col-span-2"><label className="block text-xs text-slate-500 mb-1">Item Title</label><input required type="text" name="title" value={formData.title} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="Item description" /></div>
-                    <div><label className="block text-xs text-slate-500 mb-1">Status</label><select name="status" value={formData.status} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500"><option value="Draft">Draft</option><option value="Active">Active</option><option value="Sold">Sold</option><option value="Redonated">Redonated</option></select></div>
-                    <div><label className="block text-xs text-slate-500 mb-1">Cost Price (£)</label><input required type="number" step="0.01" name="costPrice" value={formData.costPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" /></div>
-                    <div><label className="block text-xs text-slate-500 mb-1">Listed Price (£)</label><input required type="number" step="0.01" name="listPrice" value={formData.listPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" /></div>
-                    <div><label className="block text-xs text-slate-500 mb-1">Upload Date</label><input required type="date" name="uploadDate" value={formData.uploadDate} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" /></div>
-                    {formData.status === 'Sold' && (
-                      <><div className="md:col-start-1"><label className="block text-xs text-slate-500 mb-1">Sell Date</label><input required type="date" name="sellDate" value={formData.sellDate} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" /></div>
-                      <div><label className="block text-xs text-slate-500 mb-1">Sold Price (£)</label><input required type="number" step="0.01" name="soldPrice" value={formData.soldPrice} onChange={handleInputChange} className="w-full text-sm p-2 border border-slate-300 rounded-lg outline-none focus:border-teal-500" placeholder="0.00" /></div></>
-                    )}
-                    <div className="md:col-span-4 flex justify-end mt-2"><button type="submit" className="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm hover:bg-slate-700 transition-colors">{isEditing ? 'Update Item' : 'Save Item'}</button></div>
-                  </form>
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[1000px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 select-none">
-                      <SortHeader label="SKU" sortKey="sku" />
-                      <SortHeader label="Item Title" sortKey="title" />
-                      <SortHeader label="Status" sortKey="status" />
-                      <SortHeader label="Cost" sortKey="costPrice" />
-                      <SortHeader label="Listed" sortKey="listPrice" />
-                      <SortHeader label="Sold For" sortKey="soldPrice" />
-                      <SortHeader label="Drop %" sortKey="drop" />
-                      <SortHeader label="Profit" sortKey="profit" />
-                      <SortHeader label="Upload Date" sortKey="uploadDate" />
-                      <SortHeader label="Sell Date" sortKey="sellDate" />
-                      <SortHeader label="Days Listed" sortKey="daysListed" alignRight />
-                      <th className="p-4 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {sortedItems.length === 0 ? (
-                      <tr><td colSpan="12" className="p-8 text-center text-slate-500">No items found for this date range.</td></tr>
-                    ) : (
-                      sortedItems.map(item => {
-                        const profit = item.status === 'Sold' ? (item.soldPrice - item.costPrice) : 0;
-                        const drop = getPercentageDrop(item.listPrice, item.soldPrice);
-                        let statusClass = 'bg-amber-100 text-amber-700';
-                        if (item.status === 'Sold') statusClass = 'bg-emerald-100 text-emerald-700';
-                        if (item.status === 'Draft') statusClass = 'bg-slate-200 text-slate-600';
-                        if (item.status === 'Redonated') statusClass = 'bg-rose-100 text-rose-700';
-
-                        return (
-                          <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="p-4 text-sm text-slate-600 font-medium whitespace-nowrap">{item.sku}</td>
-                            <td className="p-4 text-sm text-slate-800">{item.title}</td>
-                            <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusClass}`}>{item.status}</span></td>
-                            <td className="p-4 text-sm text-slate-600">£{item.costPrice.toFixed(2)}</td>
-                            <td className="p-4 text-sm text-slate-600">£{item.listPrice.toFixed(2)}</td>
-                            <td className="p-4 text-sm font-medium text-slate-800">{item.status === 'Sold' ? `£${item.soldPrice.toFixed(2)}` : '-'}</td>
-                            <td className="p-4 text-sm font-medium text-rose-500">{item.status === 'Sold' && drop > 0 ? `-${drop.toFixed(1)}%` : '-'}</td>
-                            <td className="p-4 text-sm font-medium">{item.status === 'Sold' ? (<span className={profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>{profit >= 0 ? '+' : ''}£{profit.toFixed(2)}</span>) : '-'}</td>
-                            <td className="p-4 text-sm text-slate-600 whitespace-nowrap">{formatDate(item.uploadDate)}</td>
-                            <td className="p-4 text-sm text-emerald-600 whitespace-nowrap">{item.status === 'Sold' ? formatDate(item.sellDate) : '-'}</td>
-                            <td className="p-4 text-sm text-right text-slate-600">{getDaysListed(item.uploadDate, item.sellDate, item.status)}</td>
-                            <td className="p-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {item.status === 'Draft' && <button onClick={() => updateStatus(item.id, 'Active')} title="Make Active" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><ArrowRightCircle className="w-4 h-4" /></button>}
-                                {item.status === 'Active' && <button onClick={() => openSellModal(item)} title="Mark as Sold" className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"><CheckCircle className="w-4 h-4" /></button>}
-                                <button onClick={() => initiateEdit(item)} title="Edit Item" className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                                {item.status !== 'Redonated' && <button onClick={() => openRedonateModal(item)} title="Mark as Redonated" className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {sellModalVisible && (
-              <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4">
-                  <h3 className="text-lg font-medium text-slate-800 mb-2">Mark Item as Sold</h3>
-                  <p className="text-sm text-slate-500 mb-4">Please enter the final selling price for {itemBeingSold?.title}.</p>
-                  <input type="number" step="0.01" value={sellPrice} onChange={(e) => setSellPrice(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-emerald-500 mb-4" placeholder="0.00" autoFocus />
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setSellModalVisible(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
-                    <button onClick={confirmSoldStatus} className="px-4 py-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors">Confirm Sale</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {redonateModalVisible && (
-              <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4">
-                  <h3 className="text-lg font-medium text-slate-800 mb-2">Mark as Redonated</h3>
-                  <p className="text-sm text-slate-500 mb-4">Are you sure you want to mark {itemBeingRedonated?.title} as Redonated?</p>
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setRedonateModalVisible(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
-                    <button onClick={confirmRedonateStatus} className="px-4 py-2 text-sm text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    // ── Stats ──────────────────────────────────────────────────────────────
+    function calcStats(itemList) {
+      const sold = itemList.filter(i => i.status === 'Sold');
+      const listed = itemList.filter(i => i.status === 'Listed');
+      const donated = itemList.filter(i => i.status === 'Donated');
+      const totalSpent = itemList.reduce((s,i) => s+(i.buyPrice||0), 0);
+      const totalEarned = sold.reduce((s,i) => s+(i.salePrice||0), 0);
+      const netProfit = totalEarned - sold.reduce((s,i) => s+(i.buyPrice||0), 0);
+      const totalExpenses = expenses.reduce((s,e) => s+(e.amount||0), 0);
+      const trueProfit = netProfit - totalExpenses;
+      const roi = totalSpent > 0 ? ((totalEarned/totalSpent)-1)*100 : 0;
+      const avgDays = sold.length ? sold.reduce((s,i) => s+daysListed(i),0)/sold.length : 0;
+      const sellThrough = (sold.length + listed.length) > 0 ? (sold.length/(sold.length+listed.length))*100 : 0;
+      return { sold:sold.length, listed:listed.length, donated:donated.length,
+               totalSpent, totalEarned, netProfit, totalExpenses, trueProfit,
+               roi, avgDays, sellThrough, total:itemList.length };
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────
+    function render() {
+      const app = document.getElementById('app');
+      if (!app) return;
+      const filtered = getFilteredItems();
+      const stats = calcStats(filtered);
+      app.innerHTML = layout(stats, filtered);
+      bindEvents();
+      renderCharts(filtered);
+    }
+
+    function layout(stats, filtered) {
+      return `
+        <div class="shell">
+          ${sidebar()}
+          <div class="main">
+            ${topbar()}
+            <div class="content" id="content">
+              ${currentView === 'dashboard' ? dashView(stats, filtered) : ''}
+              ${currentView === 'inventory' ? inventoryView(filtered) : ''}
+              ${currentView === 'expenses' ? expensesView() : ''}
+              ${currentView === 'monthly' ? monthlyView() : ''}
+            </div>
+          </div>
+        </div>
+        ${sellModal ? sellModalHTML() : ''}
+        ${document.getElementById('add-item-modal')?.style.display === 'flex' ? '' : ''}
+      `;
+    }
+
+    function sidebar() {
+      const navItems = [
+        { id:'dashboard', icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>`, label:'Dashboard' },
+        { id:'inventory', icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`, label:'Inventory' },
+        { id:'monthly', icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`, label:'Monthly Report' },
+        { id:'expenses', icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`, label:'Expenses' },
+      ];
+      return `
+        <nav class="sidebar">
+          <div class="sidebar-logo">
+            <div class="logo-mark">RR</div>
+            <span class="logo-text">Resell Radar</span>
+          </div>
+          <div class="nav-section-label">MENU</div>
+          ${navItems.map(n => `
+            <button class="nav-item ${currentView===n.id?'active':''}" data-view="${n.id}">
+              <span class="nav-icon">${n.icon}</span>
+              <span>${n.label}</span>
+            </button>
+          `).join('')}
+          <div class="sidebar-footer">
+            <div class="sidebar-user">
+              <div class="user-avatar">S</div>
+              <div class="user-info">
+                <div class="user-name">Stephen</div>
+                <div class="user-sub">Reseller</div>
+              </div>
+            </div>
+          </div>
+        </nav>`;
+    }
+
+    function topbar() {
+      const viewLabels = { dashboard:'Dashboard', inventory:'Inventory', monthly:'Monthly Report', expenses:'Expenses' };
+      return `
+        <header class="topbar">
+          <div class="topbar-left">
+            <h1 class="page-title">${viewLabels[currentView]||''}</h1>
+          </div>
+          <div class="topbar-right">
+            ${currentView === 'dashboard' || currentView === 'inventory' ? `
+              <div class="date-filter">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-icon"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <input type="date" id="filter-start" value="${filterStart}" placeholder="From">
+                <span class="filter-sep">—</span>
+                <input type="date" id="filter-end" value="${filterEnd}" placeholder="To">
+                ${filterStart||filterEnd ? `<button class="clear-filter" id="clear-filter">✕</button>` : ''}
+              </div>
+            ` : ''}
+            ${currentView === 'inventory' ? `
+              <button class="btn-primary" id="add-item-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Item
+              </button>
+            ` : ''}
+            ${currentView === 'expenses' ? `
+              <button class="btn-primary" id="add-expense-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Expense
+              </button>
+            ` : ''}
+          </div>
+        </header>`;
+    }
+
+    function dashView(stats, filtered) {
+      const recentSold = items.filter(i=>i.status==='Sold').slice(0,6);
+      return `
+        <div class="dash-grid">
+          <div class="dash-main">
+            <div class="kpi-row">
+              ${kpiCard('Total Earned', fmt(stats.totalEarned), 'green', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`, `ROI: ${stats.roi.toFixed(1)}%`)}
+              ${kpiCard('Net Profit', fmt(stats.netProfit), stats.netProfit>=0?'teal':'red', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`, `After buying costs`)}
+              ${kpiCard('True Profit', fmt(stats.trueProfit), stats.trueProfit>=0?'blue':'red', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`, `Incl. expenses`)}
+              ${kpiCard('Active Listings', stats.listed, 'amber', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`, `${stats.total} total items`)}
+            </div>
+            <div class="kpi-row kpi-row-2">
+              ${kpiSmall('Items Sold', stats.sold, 'green')}
+              ${kpiSmall('Items Donated', stats.donated, 'purple')}
+              ${kpiSmall('Sell-Through', stats.sellThrough.toFixed(1)+'%', 'teal')}
+              ${kpiSmall('Avg Days to Sell', stats.avgDays.toFixed(1), 'blue')}
+              ${kpiSmall('Total Spent', fmt(stats.totalSpent), 'slate')}
+              ${kpiSmall('Expenses', fmt(stats.totalExpenses), 'red')}
+            </div>
+            <div class="charts-row">
+              <div class="chart-card">
+                <div class="chart-card-header">
+                  <h3>Monthly Earnings</h3>
+                </div>
+                <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-card-header">
+                  <h3>Profit by Category</h3>
+                </div>
+                <div class="chart-wrap"><canvas id="profit-chart"></canvas></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-side">
+            <div class="side-card">
+              <div class="chart-card-header"><h3>Stock Status</h3></div>
+              <div class="doughnut-wrap"><canvas id="status-chart"></canvas></div>
+              <div class="status-legend">
+                <div class="legend-item"><span class="legend-dot amber"></span>Listed: ${stats.listed}</div>
+                <div class="legend-item"><span class="legend-dot green"></span>Sold: ${stats.sold}</div>
+                <div class="legend-item"><span class="legend-dot purple"></span>Donated: ${stats.donated}</div>
+              </div>
+            </div>
+            <div class="side-card">
+              <div class="chart-card-header"><h3>Recent Sales</h3></div>
+              <div class="recent-list">
+                ${recentSold.length ? recentSold.map(i => `
+                  <div class="recent-item">
+                    <div class="recent-info">
+                      <div class="recent-name">${i.name||'—'}</div>
+                      <div class="recent-meta">${fmtDate(i.dateResolved)} · ${i.category||'—'}</div>
+                    </div>
+                    <div class="recent-profit ${profit(i)>=0?'pos':'neg'}">${fmt(profit(i))}</div>
+                  </div>
+                `).join('') : '<div class="empty-state">No sales yet</div>'}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function kpiCard(label, value, color, icon, sub) {
+      return `
+        <div class="kpi-card">
+          <div class="kpi-icon-wrap ${color}">${icon}</div>
+          <div class="kpi-body">
+            <div class="kpi-label">${label}</div>
+            <div class="kpi-value">${value}</div>
+            <div class="kpi-sub">${sub}</div>
+          </div>
+        </div>`;
+    }
+
+    function kpiSmall(label, value, color) {
+      return `
+        <div class="kpi-small ${color}">
+          <div class="kpi-small-label">${label}</div>
+          <div class="kpi-small-value">${value}</div>
+        </div>`;
+    }
+
+    function inventoryView(filtered) {
+      const sorted = [...filtered].sort((a,b) => {
+        const order = {Listed:0,Unlisted:1,Sold:2,Donated:3};
+        return (order[a.status]||0)-(order[b.status]||0) || (a.dateListed||'').localeCompare(b.dateListed||'');
+      });
+      return `
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-info">
+              <span class="table-count">${filtered.length} items</span>
+              <button class="btn-outline" id="export-csv">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+              </button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU</th><th>Item</th><th>Category</th><th>Status</th>
+                  <th class="num">Buy</th><th class="num">Listed</th><th class="num">Sold For</th>
+                  <th class="num">Profit</th><th class="num">Days</th><th>Listed Date</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sorted.length ? sorted.map(i => {
+                  const p = profit(i);
+                  const d = daysListed(i);
+                  return `
+                    <tr>
+                      <td class="sku-cell">${i.sku||'—'}</td>
+                      <td class="name-cell">${i.name||'—'}</td>
+                      <td><span class="tag">${i.category||'—'}</span></td>
+                      <td><span class="status-badge ${(i.status||'').toLowerCase()}">${i.status||'—'}</span></td>
+                      <td class="num">${fmt(i.buyPrice)}</td>
+                      <td class="num">${fmt(i.listedPrice)}</td>
+                      <td class="num">${i.status==='Sold'?fmt(i.salePrice):'—'}</td>
+                      <td class="num ${i.status==='Sold'||i.status==='Donated'?(p>=0?'pos':'neg'):''}">${i.status==='Sold'||i.status==='Donated'?fmt(p):'—'}</td>
+                      <td class="num">${d}</td>
+                      <td>${fmtDate(i.dateListed)}</td>
+                      <td class="actions-cell">
+                        ${i.status==='Listed'?`<button class="action-btn sell-btn" data-id="${i.id}" title="Mark sold">✓</button>`:''}
+                        <button class="action-btn edit-btn" data-id="${i.id}" title="Edit">✎</button>
+                        <button class="action-btn del-btn" data-id="${i.id}" title="Delete">✕</button>
+                      </td>
+                    </tr>`;
+                }).join('') : `<tr><td colspan="11" class="empty-row">No items yet — add your first listing</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ${itemFormModal()}`;
+    }
+
+    function itemFormModal() {
+      const i = editingItem || {};
+      const isEdit = !!editingItem;
+      return `
+        <div class="modal-bg" id="item-modal" style="display:none">
+          <div class="modal">
+            <div class="modal-header">
+              <h3>${isEdit?'Edit Item':'Add New Item'}</h3>
+              <button class="modal-close" id="close-item-modal">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-field span-2">
+                  <label>Item Name</label>
+                  <input type="text" id="f-name" value="${i.name||''}" placeholder="e.g. Nike Air Max 90 UK9">
+                </div>
+                <div class="form-field">
+                  <label>SKU / ID</label>
+                  <input type="text" id="f-sku" value="${i.sku||''}" placeholder="e.g. SHO-001">
+                </div>
+                <div class="form-field">
+                  <label>Category</label>
+                  <select id="f-cat">
+                    ${CATEGORIES.map(c=>`<option ${i.category===c?'selected':''}>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Source</label>
+                  <select id="f-source">
+                    ${SOURCES.map(s=>`<option ${i.source===s?'selected':''}>${s}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Condition</label>
+                  <select id="f-cond">
+                    ${CONDITIONS.map(c=>`<option ${i.condition===c?'selected':''}>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Buy Price (£)</label>
+                  <input type="number" id="f-buy" step="0.01" min="0" value="${i.buyPrice||''}" placeholder="0.00">
+                </div>
+                <div class="form-field">
+                  <label>Listed Price (£)</label>
+                  <input type="number" id="f-listed" step="0.01" min="0" value="${i.listedPrice||''}" placeholder="0.00">
+                </div>
+                <div class="form-field">
+                  <label>Date Listed</label>
+                  <input type="date" id="f-date" value="${i.dateListed||new Date().toISOString().split('T')[0]}">
+                </div>
+                <div class="form-field">
+                  <label>Status</label>
+                  <select id="f-status">
+                    ${STATUSES.map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Date Resolved</label>
+                  <input type="date" id="f-resolved" value="${i.dateResolved||''}">
+                </div>
+                <div class="form-field">
+                  <label>Sale Price (£)</label>
+                  <input type="number" id="f-sale" step="0.01" min="0" value="${i.salePrice||''}" placeholder="0.00">
+                </div>
+                <div class="form-field span-2">
+                  <label>Notes</label>
+                  <textarea id="f-notes" rows="2" placeholder="Listing description, condition notes...">${i.notes||''}</textarea>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-ghost" id="cancel-item">Cancel</button>
+              <button class="btn-primary" id="save-item" data-id="${i.id||''}">
+                ${isEdit?'Save Changes':'Add Item'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function sellModalHTML() {
+      return `
+        <div class="modal-bg" id="sell-modal-bg">
+          <div class="modal modal-sm">
+            <div class="modal-header">
+              <h3>Mark as Sold</h3>
+              <button class="modal-close" id="close-sell-modal">✕</button>
+            </div>
+            <div class="modal-body">
+              <p class="modal-desc">Enter the final sale price for <strong>${sellModal?.name||'this item'}</strong></p>
+              <div class="form-field">
+                <label>Sale Price (£)</label>
+                <input type="number" id="sell-price-input" step="0.01" min="0" value="${sellModal?.listedPrice||''}" placeholder="0.00" autofocus>
+              </div>
+              <div class="form-field">
+                <label>Date Sold</label>
+                <input type="date" id="sell-date-input" value="${new Date().toISOString().split('T')[0]}">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-ghost" id="cancel-sell">Cancel</button>
+              <button class="btn-primary green" id="confirm-sell" data-id="${sellModal?.id}">Confirm Sale</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function expensesView() {
+      const total = expenses.reduce((s,e)=>s+(e.amount||0),0);
+      const cats = {};
+      expenses.forEach(e => { cats[e.category||'Other'] = (cats[e.category||'Other']||0)+(e.amount||0); });
+      return `
+        <div class="expenses-layout">
+          <div class="table-card">
+            <div class="table-header">
+              <span class="table-count">${expenses.length} expenses · Total: ${fmt(total)}</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax Ded.</th><th>Receipt</th><th></th></tr>
+                </thead>
+                <tbody>
+                  ${expenses.length ? expenses.map(e => `
+                    <tr>
+                      <td>${fmtDate(e.date)}</td>
+                      <td class="name-cell">${e.description||'—'}</td>
+                      <td><span class="tag">${e.category||'—'}</span></td>
+                      <td class="num neg">${fmt(e.amount)}</td>
+                      <td>${e.taxDeductible?'<span class="check">✓</span>':'—'}</td>
+                      <td>${e.receipt?'<span class="check">✓</span>':'—'}</td>
+                      <td class="actions-cell">
+                        <button class="action-btn edit-exp-btn" data-id="${e.id}" title="Edit">✎</button>
+                        <button class="action-btn del-exp-btn" data-id="${e.id}" title="Delete">✕</button>
+                      </td>
+                    </tr>`).join('') : `<tr><td colspan="7" class="empty-row">No expenses logged yet</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="exp-sidebar">
+            <div class="side-card">
+              <div class="chart-card-header"><h3>By Category</h3></div>
+              ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
+                <div class="exp-cat-row">
+                  <span>${cat}</span>
+                  <span class="neg">${fmt(amt)}</span>
+                </div>`).join('')||'<div class="empty-state">No data</div>'}
+            </div>
+          </div>
+        </div>
+        ${expenseFormModal()}`;
+    }
+
+    function expenseFormModal() {
+      const e = editingExpense || {};
+      const EXP_CATS = ['Sourcing','Packaging','Postage','Platform fees','Travel','Equipment','Storage','Other'];
+      return `
+        <div class="modal-bg" id="expense-modal" style="display:none">
+          <div class="modal modal-sm">
+            <div class="modal-header">
+              <h3>${editingExpense?'Edit Expense':'Add Expense'}</h3>
+              <button class="modal-close" id="close-exp-modal">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-field span-2">
+                  <label>Description</label>
+                  <input type="text" id="ef-desc" value="${e.description||''}" placeholder="e.g. Poly mailers x 100">
+                </div>
+                <div class="form-field">
+                  <label>Category</label>
+                  <select id="ef-cat">
+                    ${EXP_CATS.map(c=>`<option ${e.category===c?'selected':''}>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Amount (£)</label>
+                  <input type="number" id="ef-amount" step="0.01" min="0" value="${e.amount||''}" placeholder="0.00">
+                </div>
+                <div class="form-field">
+                  <label>Date</label>
+                  <input type="date" id="ef-date" value="${e.date||new Date().toISOString().split('T')[0]}">
+                </div>
+                <div class="form-field">
+                  <label>Notes</label>
+                  <input type="text" id="ef-notes" value="${e.notes||''}" placeholder="Optional">
+                </div>
+                <div class="form-field checkbox-field">
+                  <label><input type="checkbox" id="ef-tax" ${e.taxDeductible?'checked':''}> Tax deductible</label>
+                </div>
+                <div class="form-field checkbox-field">
+                  <label><input type="checkbox" id="ef-receipt" ${e.receipt?'checked':''}> Receipt kept</label>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-ghost" id="cancel-exp">Cancel</button>
+              <button class="btn-primary" id="save-exp" data-id="${e.id||''}">
+                ${editingExpense?'Save Changes':'Add Expense'}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function monthlyView() {
+      const months = [];
+      const now = new Date();
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        months.push({ year:d.getFullYear(), month:d.getMonth(), label:d.toLocaleDateString('en-GB',{month:'short',year:'numeric'}) });
+      }
+      const rows = months.map(m => {
+        const mItems = items.filter(i => {
+          const d = i.dateListed ? new Date(i.dateListed) : null;
+          return d && d.getFullYear()===m.year && d.getMonth()===m.month;
+        });
+        const mSold = items.filter(i => {
+          const d = i.dateResolved ? new Date(i.dateResolved) : null;
+          return d && d.getFullYear()===m.year && d.getMonth()===m.month && i.status==='Sold';
+        });
+        const mDonated = items.filter(i => {
+          const d = i.dateResolved ? new Date(i.dateResolved) : null;
+          return d && d.getFullYear()===m.year && d.getMonth()===m.month && i.status==='Donated';
+        });
+        const earned = mSold.reduce((s,i)=>s+(i.salePrice||0),0);
+        const spent = mItems.reduce((s,i)=>s+(i.buyPrice||0),0);
+        const p = earned - mSold.reduce((s,i)=>s+(i.buyPrice||0),0);
+        return { ...m, listed:mItems.length, sold:mSold.length, donated:mDonated.length, earned, spent, profit:p };
+      }).reverse();
+
+      const catStats = {};
+      CATEGORIES.forEach(cat => {
+        const catSold = items.filter(i=>i.category===cat&&i.status==='Sold');
+        const catAll = items.filter(i=>i.category===cat);
+        catStats[cat] = {
+          listed: catAll.filter(i=>i.status==='Listed').length,
+          sold: catSold.length,
+          donated: catAll.filter(i=>i.status==='Donated').length,
+          spent: catAll.reduce((s,i)=>s+(i.buyPrice||0),0),
+          earned: catSold.reduce((s,i)=>s+(i.salePrice||0),0),
+          profit: catSold.reduce((s,i)=>s+(i.salePrice||0)-(i.buyPrice||0),0),
+        };
+      });
+
+      return `
+        <div class="monthly-layout">
+          <div class="table-card">
+            <div class="chart-card-header" style="padding:1.25rem 1.5rem 0"><h3>Month by Month</h3></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Month</th><th class="num">Listed</th><th class="num">Sold</th><th class="num">Donated</th><th class="num">Spent</th><th class="num">Earned</th><th class="num">Profit</th></tr>
+                </thead>
+                <tbody>
+                  ${rows.map(r=>`
+                    <tr>
+                      <td>${r.label}</td>
+                      <td class="num">${r.listed}</td>
+                      <td class="num">${r.sold}</td>
+                      <td class="num">${r.donated}</td>
+                      <td class="num">${fmt(r.spent)}</td>
+                      <td class="num">${fmt(r.earned)}</td>
+                      <td class="num ${r.profit>=0?'pos':'neg'}">${fmt(r.profit)}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="table-card" style="margin-top:1.5rem">
+            <div class="chart-card-header" style="padding:1.25rem 1.5rem 0"><h3>Category Breakdown (All Time)</h3></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Category</th><th class="num">Listed</th><th class="num">Sold</th><th class="num">Donated</th><th class="num">Spent</th><th class="num">Earned</th><th class="num">Profit</th></tr>
+                </thead>
+                <tbody>
+                  ${CATEGORIES.map(cat => {
+                    const s = catStats[cat];
+                    return `<tr>
+                      <td>${cat}</td>
+                      <td class="num">${s.listed}</td>
+                      <td class="num">${s.sold}</td>
+                      <td class="num">${s.donated}</td>
+                      <td class="num">${fmt(s.spent)}</td>
+                      <td class="num">${fmt(s.earned)}</td>
+                      <td class="num ${s.profit>0?'pos':s.profit<0?'neg':''}">${fmt(s.profit)}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── Charts ─────────────────────────────────────────────────────────────
+    function renderCharts(filtered) {
+      if (currentView !== 'dashboard') return;
+      setTimeout(() => {
+        renderProfitChart(filtered);
+        renderStatusChart(filtered);
+        renderMonthlyChart();
+      }, 50);
+    }
+
+    function renderProfitChart(filtered) {
+      const canvas = document.getElementById('profit-chart');
+      if (!canvas) return;
+      if (profitChart) { profitChart.destroy(); profitChart = null; }
+      const data = CATEGORIES.map(cat => {
+        const sold = filtered.filter(i=>i.category===cat&&i.status==='Sold');
+        return sold.reduce((s,i)=>s+(i.salePrice||0)-(i.buyPrice||0),0);
+      });
+      profitChart = new Chart(canvas, {
+        type:'bar',
+        data:{
+          labels: CATEGORIES.map(c=>c.length>12?c.substring(0,12)+'…':c),
+          datasets:[{ data, backgroundColor: data.map(v=>v>=0?'rgba(26,127,110,0.8)':'rgba(192,57,43,0.8)'), borderRadius:6, borderSkipped:false }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+          scales:{
+            x:{grid:{display:false},ticks:{color:'#888',font:{size:11,family:'DM Sans'}}},
+            y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#888',font:{size:11,family:'DM Sans'},callback:v=>`£${v}`}}
+          }
+        }
+      });
+    }
+
+    function renderStatusChart(filtered) {
+      const canvas = document.getElementById('status-chart');
+      if (!canvas) return;
+      if (statusChart) { statusChart.destroy(); statusChart = null; }
+      const listed = filtered.filter(i=>i.status==='Listed').length;
+      const sold = filtered.filter(i=>i.status==='Sold').length;
+      const donated = filtered.filter(i=>i.status==='Donated').length;
+      const unlisted = filtered.filter(i=>i.status==='Unlisted').length;
+      statusChart = new Chart(canvas, {
+        type:'doughnut',
+        data:{
+          labels:['Listed','Sold','Donated','Unlisted'],
+          datasets:[{ data:[listed,sold,donated,unlisted], backgroundColor:['#D4770A','#2E7D52','#7D3C98','#6B7B79'], borderWidth:0, hoverOffset:4 }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, cutout:'65%',
+          plugins:{legend:{display:false}}
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      const canvas = document.getElementById('monthly-chart');
+      if (!canvas) return;
+      if (monthlyChart) { monthlyChart.destroy(); monthlyChart = null; }
+      const months = [];
+      const now = new Date();
+      for (let i=5;i>=0;i--) {
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        months.push({ label:d.toLocaleDateString('en-GB',{month:'short'}), year:d.getFullYear(), month:d.getMonth() });
+      }
+      const earned = months.map(m => items.filter(i=>i.status==='Sold'&&i.dateResolved&&new Date(i.dateResolved).getFullYear()===m.year&&new Date(i.dateResolved).getMonth()===m.month).reduce((s,i)=>s+(i.salePrice||0),0));
+      const profits = months.map((m,idx) => earned[idx] - items.filter(i=>i.status==='Sold'&&i.dateResolved&&new Date(i.dateResolved).getFullYear()===m.year&&new Date(i.dateResolved).getMonth()===m.month).reduce((s,i)=>s+(i.buyPrice||0),0));
+      monthlyChart = new Chart(canvas, {
+        type:'line',
+        data:{
+          labels: months.map(m=>m.label),
+          datasets:[
+            { label:'Earned', data:earned, borderColor:'#2E7D52', backgroundColor:'rgba(46,125,82,0.08)', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#2E7D52' },
+            { label:'Profit', data:profits, borderColor:'#1A7F6E', backgroundColor:'rgba(26,127,110,0.06)', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#1A7F6E' }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'top',labels:{color:'#555',font:{size:11,family:'DM Sans'},boxWidth:10,usePointStyle:true}}},
+          scales:{
+            x:{grid:{display:false},ticks:{color:'#888',font:{size:11,family:'DM Sans'}}},
+            y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#888',font:{size:11,family:'DM Sans'},callback:v=>`£${v}`}}
+          }
+        }
+      });
+    }
+
+    // ── Events ─────────────────────────────────────────────────────────────
+    function bindEvents() {
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => { currentView = btn.dataset.view; render(); });
+      });
+
+      const fs = document.getElementById('filter-start');
+      const fe = document.getElementById('filter-end');
+      if (fs) fs.addEventListener('change', e => { filterStart = e.target.value; render(); });
+      if (fe) fe.addEventListener('change', e => { filterEnd = e.target.value; render(); });
+      const cf = document.getElementById('clear-filter');
+      if (cf) cf.addEventListener('click', () => { filterStart=''; filterEnd=''; render(); });
+
+      const addBtn = document.getElementById('add-item-btn');
+      if (addBtn) addBtn.addEventListener('click', () => {
+        editingItem = null;
+        render();
+        setTimeout(() => { const m=document.getElementById('item-modal'); if(m) m.style.display='flex'; }, 10);
+      });
+
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingItem = items.find(i=>i.id===btn.dataset.id)||null;
+          render();
+          setTimeout(() => { const m=document.getElementById('item-modal'); if(m) m.style.display='flex'; }, 10);
+        });
+      });
+
+      document.querySelectorAll('.sell-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          sellModal = items.find(i=>i.id===btn.dataset.id)||null;
+          render();
+        });
+      });
+
+      document.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('Delete this item?')) await deleteDoc(doc(db,'items',btn.dataset.id));
+        });
+      });
+
+      const closeItem = document.getElementById('close-item-modal');
+      const cancelItem = document.getElementById('cancel-item');
+      if (closeItem) closeItem.addEventListener('click', () => { document.getElementById('item-modal').style.display='none'; editingItem=null; });
+      if (cancelItem) cancelItem.addEventListener('click', () => { document.getElementById('item-modal').style.display='none'; editingItem=null; });
+
+      const saveItem = document.getElementById('save-item');
+      if (saveItem) saveItem.addEventListener('click', async () => {
+        const data = {
+          name: document.getElementById('f-name').value.trim(),
+          sku: document.getElementById('f-sku').value.trim(),
+          category: document.getElementById('f-cat').value,
+          source: document.getElementById('f-source').value,
+          condition: document.getElementById('f-cond').value,
+          buyPrice: parseFloat(document.getElementById('f-buy').value)||0,
+          listedPrice: parseFloat(document.getElementById('f-listed').value)||0,
+          dateListed: document.getElementById('f-date').value,
+          status: document.getElementById('f-status').value,
+          dateResolved: document.getElementById('f-resolved').value||null,
+          salePrice: parseFloat(document.getElementById('f-sale').value)||0,
+          notes: document.getElementById('f-notes').value.trim(),
+          updatedAt: new Date().toISOString(),
+        };
+        if (!data.name) { alert('Please enter an item name'); return; }
+        const id = saveItem.dataset.id;
+        if (id) await updateDoc(doc(db,'items',id), data);
+        else await addDoc(collection(db,'items'), { ...data, createdAt: new Date().toISOString() });
+        document.getElementById('item-modal').style.display='none';
+        editingItem=null;
+      });
+
+      const closeSell = document.getElementById('close-sell-modal');
+      const cancelSell = document.getElementById('cancel-sell');
+      if (closeSell) closeSell.addEventListener('click', () => { sellModal=null; render(); });
+      if (cancelSell) cancelSell.addEventListener('click', () => { sellModal=null; render(); });
+
+      const confirmSell = document.getElementById('confirm-sell');
+      if (confirmSell) confirmSell.addEventListener('click', async () => {
+        const price = parseFloat(document.getElementById('sell-price-input').value)||0;
+        const dateVal = document.getElementById('sell-date-input').value;
+        await updateDoc(doc(db,'items',confirmSell.dataset.id), { status:'Sold', salePrice:price, dateResolved:dateVal });
+        sellModal=null; render();
+      });
+
+      const addExpBtn = document.getElementById('add-expense-btn');
+      if (addExpBtn) addExpBtn.addEventListener('click', () => {
+        editingExpense=null; render();
+        setTimeout(() => { const m=document.getElementById('expense-modal'); if(m) m.style.display='flex'; }, 10);
+      });
+
+      document.querySelectorAll('.edit-exp-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingExpense = expenses.find(e=>e.id===btn.dataset.id)||null;
+          render();
+          setTimeout(() => { const m=document.getElementById('expense-modal'); if(m) m.style.display='flex'; }, 10);
+        });
+      });
+
+      document.querySelectorAll('.del-exp-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('Delete this expense?')) await deleteDoc(doc(db,'expenses',btn.dataset.id));
+        });
+      });
+
+      const closeExp = document.getElementById('close-exp-modal');
+      const cancelExp = document.getElementById('cancel-exp');
+      if (closeExp) closeExp.addEventListener('click', () => { document.getElementById('expense-modal').style.display='none'; editingExpense=null; });
+      if (cancelExp) cancelExp.addEventListener('click', () => { document.getElementById('expense-modal').style.display='none'; editingExpense=null; });
+
+      const saveExp = document.getElementById('save-exp');
+      if (saveExp) saveExp.addEventListener('click', async () => {
+        const data = {
+          description: document.getElementById('ef-desc').value.trim(),
+          category: document.getElementById('ef-cat').value,
+          amount: parseFloat(document.getElementById('ef-amount').value)||0,
+          date: document.getElementById('ef-date').value,
+          notes: document.getElementById('ef-notes').value.trim(),
+          taxDeductible: document.getElementById('ef-tax').checked,
+          receipt: document.getElementById('ef-receipt').checked,
+        };
+        if (!data.description) { alert('Please enter a description'); return; }
+        const id = saveExp.dataset.id;
+        if (id) await updateDoc(doc(db,'expenses',id), data);
+        else await addDoc(collection(db,'expenses'), data);
+        document.getElementById('expense-modal').style.display='none';
+        editingExpense=null;
+      });
+
+      const exportBtn = document.getElementById('export-csv');
+      if (exportBtn) exportBtn.addEventListener('click', () => {
+        const headers = ['SKU','Name','Category','Source','Condition','Buy Price','Listed Price','Sale Price','Profit','Status','Date Listed','Date Resolved','Days Listed','Notes'];
+        const rows = items.map(i => [
+          i.sku,`"${(i.name||'').replace(/"/g,'""')}"`,i.category,i.source,i.condition,
+          i.buyPrice,i.listedPrice,i.salePrice||'',profit(i).toFixed(2),i.status,
+          i.dateListed,i.dateResolved||'',daysListed(i),`"${(i.notes||'').replace(/"/g,'""')}"`
+        ].join(','));
+        const csv = 'data:text/csv;charset=utf-8,'+[headers.join(','),...rows].join('\n');
+        const a = document.createElement('a'); a.href=encodeURI(csv); a.download='resell-radar-export.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      });
+
+      document.querySelectorAll('.modal-bg').forEach(bg => {
+        bg.addEventListener('click', e => { if(e.target===bg) { bg.style.display='none'; editingItem=null; editingExpense=null; sellModal=null; } });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => render());
   </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w: 220px;
+      --teal: #1A7F6E;
+      --teal-light: #E6F4F1;
+      --dark: #111918;
+      --dark-2: #1C2B2A;
+      --white: #ffffff;
+      --grey-50: #F8FAFA;
+      --grey-100: #F0F4F3;
+      --grey-200: #DDE5E3;
+      --grey-400: #9AADA9;
+      --grey-600: #5A706C;
+      --green: #2E7D52;
+      --green-light: #E8F5EE;
+      --red: #C0392B;
+      --red-light: #FDECEA;
+      --amber: #D4770A;
+      --amber-light: #FEF3E2;
+      --blue: #1A5276;
+      --blue-light: #EAF2FB;
+      --purple: #7D3C98;
+      --purple-light: #F5EEF8;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--grey-50);
+      color: var(--dark);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Shell ─────────────────────────────────────────────────── */
+    .shell { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--dark-2);
+      display: flex;
+      flex-direction: column;
+      padding: 0 0 1rem;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 0.75rem;
+    }
+
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--teal);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: white;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--grey-400);
+      letter-spacing: 0.1em;
+      padding: 0 1.25rem 0.5rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.65rem 1.25rem;
+      color: rgba(255,255,255,0.6);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 400;
+      width: 100%;
+      text-align: left;
+      border-radius: 0;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .nav-item:hover { color: white; background: rgba(255,255,255,0.06); }
+
+    .nav-item.active {
+      color: white;
+      background: rgba(26,127,110,0.2);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      background: var(--teal);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-icon {
+      width: 16px; height: 16px;
+      display: flex; align-items: center;
+      flex-shrink: 0;
+    }
+
+    .nav-icon svg { width: 16px; height: 16px; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1rem 1.25rem 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 30px; height: 30px;
+      background: var(--teal);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: white;
+      flex-shrink: 0;
+    }
+
+    .user-name { font-size: 13px; font-weight: 500; color: white; }
+    .user-sub { font-size: 11px; color: var(--grey-400); }
+
+    /* ── Main ──────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Topbar ────────────────────────────────────────────────── */
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--grey-200);
+      padding: 0 1.5rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      gap: 1rem;
+    }
+
+    .page-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark);
+      letter-spacing: -0.02em;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .date-filter {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--grey-100);
+      border: 1px solid var(--grey-200);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.75rem;
+    }
+
+    .filter-icon { width: 14px; height: 14px; color: var(--grey-400); flex-shrink: 0; }
+
+    .date-filter input {
+      background: none;
+      border: none;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      color: var(--dark);
+    }
+
+    .filter-sep { color: var(--grey-400); font-size: 12px; }
+
+    .clear-filter {
+      background: none; border: none; cursor: pointer;
+      color: var(--grey-400); font-size: 12px;
+      padding: 0 0 0 4px;
+      transition: color 0.15s;
+    }
+    .clear-filter:hover { color: var(--red); }
+
+    /* ── Buttons ───────────────────────────────────────────────── */
+    .btn-primary {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--teal);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #15695A; }
+    .btn-primary.green { background: var(--green); }
+    .btn-primary.green:hover { background: #256645; }
+
+    .btn-outline {
+      display: flex; align-items: center; gap: 6px;
+      background: white;
+      color: var(--grey-600);
+      border: 1px solid var(--grey-200);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--grey-400); color: var(--dark); }
+
+    .btn-ghost {
+      background: none; border: none;
+      color: var(--grey-600);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s;
+    }
+    .btn-ghost:hover { background: var(--grey-100); color: var(--dark); }
+
+    .btn-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Content ───────────────────────────────────────────────── */
+    .content {
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    /* ── Dashboard ─────────────────────────────────────────────── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1.25rem;
+    }
+
+    .dash-main { display: flex; flex-direction: column; gap: 1.25rem; }
+    .dash-side { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--grey-100);
+    }
+
+    .kpi-icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .kpi-icon-wrap svg { width: 18px; height: 18px; }
+    .kpi-icon-wrap.green { background: var(--green-light); color: var(--green); }
+    .kpi-icon-wrap.teal { background: var(--teal-light); color: var(--teal); }
+    .kpi-icon-wrap.amber { background: var(--amber-light); color: var(--amber); }
+    .kpi-icon-wrap.blue { background: var(--blue-light); color: var(--blue); }
+    .kpi-icon-wrap.red { background: var(--red-light); color: var(--red); }
+
+    .kpi-body { min-width: 0; }
+    .kpi-label { font-size: 12px; color: var(--grey-600); font-weight: 400; margin-bottom: 3px; }
+    .kpi-value { font-size: 22px; font-weight: 600; color: var(--dark); letter-spacing: -0.03em; line-height: 1.1; }
+    .kpi-sub { font-size: 11px; color: var(--grey-400); margin-top: 4px; }
+
+    .kpi-row-2 {
+      grid-template-columns: repeat(6, 1fr);
+    }
+
+    .kpi-small {
+      background: white;
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--grey-100);
+      border-top: 2px solid transparent;
+    }
+
+    .kpi-small.green { border-top-color: var(--green); }
+    .kpi-small.teal { border-top-color: var(--teal); }
+    .kpi-small.amber { border-top-color: var(--amber); }
+    .kpi-small.blue { border-top-color: var(--blue); }
+    .kpi-small.purple { border-top-color: var(--purple); }
+    .kpi-small.red { border-top-color: var(--red); }
+    .kpi-small.slate { border-top-color: var(--grey-400); }
+
+    .kpi-small-label { font-size: 11px; color: var(--grey-600); margin-bottom: 4px; }
+    .kpi-small-value { font-size: 17px; font-weight: 600; color: var(--dark); letter-spacing: -0.02em; }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .chart-card, .side-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--grey-100);
+      overflow: hidden;
+    }
+
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--grey-100);
+    }
+
+    .chart-card-header h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--dark);
+      letter-spacing: -0.01em;
+    }
+
+    .chart-wrap { padding: 1rem; height: 200px; }
+    .doughnut-wrap { padding: 1rem; height: 160px; }
+
+    .side-card { padding: 0; }
+
+    .status-legend {
+      padding: 0.75rem 1.25rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--grey-600);
+    }
+
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-dot.amber { background: var(--amber); }
+    .legend-dot.green { background: var(--green); }
+    .legend-dot.purple { background: var(--purple); }
+
+    .recent-list { padding: 0.5rem 0; }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      transition: background 0.1s;
+    }
+    .recent-item:hover { background: var(--grey-50); }
+
+    .recent-name { font-size: 13px; font-weight: 500; color: var(--dark); }
+    .recent-meta { font-size: 11px; color: var(--grey-400); margin-top: 1px; }
+
+    .recent-profit { font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace; }
+    .recent-profit.pos { color: var(--green); }
+    .recent-profit.neg { color: var(--red); }
+
+    /* ── Tables ────────────────────────────────────────────────── */
+    .table-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--grey-100);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--grey-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .table-count {
+      font-size: 13px;
+      color: var(--grey-600);
+      font-weight: 400;
+    }
+
+    .table-scroll { overflow-x: auto; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    .data-table th {
+      padding: 0.65rem 1rem;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--grey-400);
+      text-align: left;
+      background: var(--grey-50);
+      border-bottom: 1px solid var(--grey-200);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 0.75rem 1rem;
+      font-size: 13px;
+      color: var(--dark);
+      border-bottom: 1px solid var(--grey-100);
+      vertical-align: middle;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--grey-50); }
+
+    .data-table th.num, .data-table td.num {
+      text-align: right;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+    }
+
+    .name-cell { font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sku-cell { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--grey-600); white-space: nowrap; }
+
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--grey-100);
+      border-radius: 99px;
+      font-size: 11px;
+      color: var(--grey-600);
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .status-badge.listed { background: var(--amber-light); color: var(--amber); }
+    .status-badge.sold { background: var(--green-light); color: var(--green); }
+    .status-badge.donated { background: var(--purple-light); color: var(--purple); }
+    .status-badge.unlisted { background: var(--grey-100); color: var(--grey-600); }
+
+    .actions-cell { white-space: nowrap; }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px; height: 26px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      background: none;
+      color: var(--grey-400);
+      transition: all 0.15s;
+      margin-left: 2px;
+    }
+
+    .sell-btn:hover { background: var(--green-light); color: var(--green); }
+    .edit-btn:hover { background: var(--blue-light); color: var(--blue); }
+    .del-btn:hover { background: var(--red-light); color: var(--red); }
+
+    .empty-row { text-align: center; color: var(--grey-400); padding: 2.5rem !important; }
+    .empty-state { padding: 1.5rem 1.25rem; color: var(--grey-400); font-size: 13px; }
+
+    .check { color: var(--green); font-weight: 600; }
+
+    /* ── Expenses ──────────────────────────────────────────────── */
+    .expenses-layout {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .exp-sidebar .side-card { padding: 1rem; }
+    .exp-cat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--grey-100);
+    }
+    .exp-cat-row:last-child { border-bottom: none; }
+
+    /* ── Monthly ───────────────────────────────────────────────── */
+    .monthly-layout { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* ── Modals ────────────────────────────────────────────────── */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(17,25,24,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 1rem;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal {
+      background: white;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 640px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-md);
+    }
+
+    .modal.modal-sm { max-width: 400px; }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--grey-100);
+    }
+
+    .modal-header h3 { font-size: 15px; font-weight: 600; color: var(--dark); }
+
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--grey-400); font-size: 14px;
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .modal-close:hover { background: var(--grey-100); color: var(--dark); }
+
+    .modal-body { padding: 1.5rem; }
+    .modal-desc { font-size: 13px; color: var(--grey-600); margin-bottom: 1rem; }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--grey-100);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field.span-2 { grid-column: span 2; }
+    .form-field.checkbox-field { justify-content: flex-end; }
+
+    .form-field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--grey-600);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-field input, .form-field select, .form-field textarea {
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--grey-200);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--dark);
+      background: white;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(26,127,110,0.1);
+    }
+
+    .form-field textarea { resize: vertical; }
+
+    .form-field input[type="checkbox"] {
+      width: 16px; height: 16px;
+      padding: 0;
+      accent-color: var(--teal);
+    }
+
+    .checkbox-field label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--dark);
+      cursor: pointer;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .dash-grid { grid-template-columns: 1fr; }
+      .dash-side { display: grid; grid-template-columns: 1fr 1fr; }
+      .kpi-row-2 { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar {
+        transform: translateX(-220px);
+        width: 220px;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .kpi-row-2 { grid-template-columns: repeat(2, 1fr); }
+      .charts-row { grid-template-columns: 1fr; }
+      .expenses-layout { grid-template-columns: 1fr; }
+      .topbar { padding: 0 1rem; }
+      .content { padding: 1rem; }
+    }
+
+    @media (max-width: 600px) {
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-field.span-2 { grid-column: span 1; }
+      .date-filter { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#9AADA9;font-family:'DM Sans',sans-serif;font-size:14px;">
+      Connecting to database…
+    </div>
+  </div>
 </body>
 </html>
